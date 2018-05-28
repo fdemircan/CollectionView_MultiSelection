@@ -15,15 +15,20 @@ class ViewController: UIViewController {
     var image: UIImage?
     var selectedSection: Int?
     var selectCell: Int?
-    var detailOptionName: String?
     var select: Bool?
     
-    var _selectedCells : NSMutableArray = []
+    var detailOptionName: String?
     var detailOptNames: [String] = [String]()
-    var optnames: [String] = [String]()
+    let tempdata = UserDefaults.standard
+    var selectedIndex = "0-0" //Userdefault için seçilen section - row
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        //Tempdata(Userdefaults Sıfırlama) --> Uygulama her açılışında temeizlenecek
+        let domain = Bundle.main.bundleIdentifier!
+        tempdata.removePersistentDomain(forName: domain)
+        tempdata.synchronize()
         
         NotificationCenter.default.addObserver(self, selector: #selector(handlePopUpClosing), name: .optionName, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(getSelectState), name: .detailSelect, object: nil)
@@ -33,18 +38,29 @@ class ViewController: UIViewController {
         collectionView.dataSource = self
         collectionView.allowsMultipleSelection = true
         
-        
         getProductOptionsCollection()
-    }
+        
+        }
     
     @objc func handlePopUpClosing(notification: Notification){
         let name = notification.object as! PopupViewController
+        
         detailOptionName = name.optionName
+        print(detailOptionName!)
         detailOptNames.append(detailOptionName!)
+        print("option name -->>>>")
+        print(detailOptionName!)
+        print("option names dizi -->>>>")
+        print(detailOptNames)
+        
+        tempdata.set(detailOptNames, forKey: self.selectedIndex)
+        
+        print("selectedIndex --> \(self.selectedIndex)")
     }
     
     @objc func updateCV(notification: Notification){
         self.collectionView.reloadData()
+        detailOptNames.removeAll()
     }
     
     @objc func getSelectState(notification: Notification){
@@ -55,6 +71,10 @@ class ViewController: UIViewController {
 }
 
 extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource{
+    func numberOfSections(in collectionView: UICollectionView) -> Int {
+        return contentCollection.count
+    }
+    
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         return contentCollection[section].images.count
     }
@@ -71,30 +91,8 @@ extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource{
         cell.optionGroupName.text = contentCollection[indexPath.section].images[indexPath.row].idiom
         cell.isSelect = false
         
-        print(indexPath.section)
-        print(indexPath.row)
-        
-        if _selectedCells.contains(indexPath){
-            if select == true{
-                cell.isSelect = true
-                print("-------------------------")
-                print(selectedSection!)
-                print(selectCell!)
-                print(detailOptNames)
-                if selectedSection != nil && selectCell != nil{
-                    if indexPath.section == selectedSection && indexPath.row == selectCell{
-                        cell.optionName.text = detailOptionName
-                        optnames = detailOptNames
-                        // selectCell = nil
-                        // selectedSection = nil
-                    }else{
-                        print(optnames)
-                        cell.optionName.text = optnames.first
-                        optnames.removeFirst()
-                    }
-                }
-            }
-        }
+        let optName = tempdata.array(forKey: "\(indexPath.section)-\(indexPath.row)")
+        cell.optionName.text = optName?.description
         
         return cell
     }
@@ -102,8 +100,8 @@ extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource{
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         selectedSection = indexPath.section
         selectCell = indexPath.row
-        _selectedCells.add(indexPath)
         
+        self.selectedIndex = "\(indexPath.section)-\(indexPath.row)"
         self.performSegue(withIdentifier: "toPopup", sender: nil)
     }
     
@@ -125,11 +123,11 @@ extension ViewController: UICollectionViewDelegate, UICollectionViewDataSource{
                 guard let json = try JSONSerialization.jsonObject(with: data, options: []) as? JSON else { return }
                 let itemResponse = Content(json: json)
                 guard let contentCollections = itemResponse else { return }
-                print(contentCollections)
+                //print(contentCollections)
                 contentCollection = [contentCollections]
                 
             } catch {
-                print(error)
+                //print(error)
             }
         }
     }

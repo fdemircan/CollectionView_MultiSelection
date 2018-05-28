@@ -16,11 +16,9 @@ class ProductOptionCell: UICollectionViewCell {
         didSet{
             if self.isSelect == true{
                 self.checkIcon.isHidden = false
-                self.optionName.isHidden = false
             }
             else{
                 self.checkIcon.isHidden = true
-                self.optionName.isHidden = true
             }
         }
     }
